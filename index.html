@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>P4 Whole Numbers – Worksheet Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    h1 { font-size: 24px; color: #333; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { padding: 10px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+    button:hover { background: #f0f0f0; }
+    button.primary { background: #2563eb; color: white; border-color: #2563eb; }
+    button.primary:hover { background: #1d4ed8; }
+
+    .sets-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .set-card { background: white; border-radius: 8px; padding: 20px; border: 1px solid #e5e5e5; }
+    .set-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .set-title { font-weight: 600; font-size: 16px; }
+    .switch-container { display: flex; align-items: center; gap: 8px; }
+    .switch { width: 44px; height: 24px; background: #ccc; border-radius: 12px; position: relative; cursor: pointer; transition: background 0.3s; }
+    .switch.active { background: #2563eb; }
+    .switch-knob { width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.3s; }
+    .switch.active .switch-knob { left: 22px; }
+
+    label { display: block; font-size: 14px; margin-bottom: 6px; font-weight: 500; }
+    input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    .help-text { font-size: 12px; color: #666; margin-top: 6px; }
+
+    .preview-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .worksheet { background: white; padding: 30px; border: 1px solid #ddd; }
+    .worksheet-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+    .student-info-inline { font-weight: bold; font-size: 16px; display: flex; gap: 30px; align-items: center; }
+    .worksheet-title { font-size: 14px; color: #666; }
+
+    .question-box { border: 2px solid #666; border-radius: 8px; padding: 20px; min-height: 150px; margin-bottom: 20px; background: white; display: flex; flex-direction: column; }
+    .question-text { font-weight: 600; margin-bottom: 15px; font-size: 15px; }
+    .working-space { flex: 1; }
+    .answer-line { text-align: right; font-size: 14px; margin-top: 10px; }
+    .answer-key { margin-top: 10px; padding: 10px; background: #f0f9ff; border-left: 3px solid #2563eb; font-size: 14px; }
+    /* Invert answers on screen & print */
+    .answer-key.inverted { transform: rotate(180deg); transform-origin: center; }
+
+    .export-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 13px; resize: vertical; }
+
+    .no-questions { color: #666; font-style: italic; padding: 20px; text-align: center; }
+
+    /* Fractions */
+    .frac { display:inline-block; vertical-align:middle; text-align:center; line-height:1; }
+    .frac .top { display:block; padding:0 3px; border-bottom: 2px solid #000; }
+    .frac .bottom { display:block; padding:2px 3px 0; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      header, .sets-grid, .preview-header, .export-section, .controls { display: none !important; }
+      .preview-section { box-shadow: none; padding: 0; }
+      .worksheet { padding: 20px; border: none; }
+      .question-box { page-break-inside: avoid; }
+      .answer-key.inverted { transform: rotate(180deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>P4 Whole Numbers – Worksheet Generator</h1>
+      <div class="controls">
+        <button onclick="toggleAnswers()"><span id="eye-icon">👁️</span> <span id="answer-btn-text">Show Answers</span></button>
+        <button onclick="copyWorksheet()">📋 Copy</button>
+        <button onclick="window.print()">🖨️ Print</button>
+        <button class="primary" onclick="generateWorksheet()">🔀 Generate Worksheet</button>
+      </div>
+    </header>
+
+    <div class="sets-grid" id="sets-grid"></div>
+
+    <div class="preview-section">
+      <div class="preview-header">
+        <h2 id="preview-title">Worksheet Preview (0 questions)</h2>
+        <div class="help-text">Tip: Click Generate again to reshuffle questions.</div>
+      </div>
+      <div class="worksheet">
+        <div class="worksheet-header">
+          <div class="student-info-inline">
+            Name: ____________________ 
+            Class: __________ 
+            Date: __________
+          </div>
+          <div class="worksheet-title">Whole Numbers (P4) – Open-ended</div>
+        </div>
+        <div id="questions-container"></div>
+      </div>
+    </div>
+
+    <div class="export-section">
+      <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">📄 Plain-text export</h3>
+      <textarea id="plain-text" readonly></textarea>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Utilities ---------- */
+    const fmt = (n) => (n < 10000 ? String(n) : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "));
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    function toWordsUnder1000(n){
+      const ones = ["zero","one","two","three","four","five","six","seven","eight","nine"];
+      const teens = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+      const tens = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+      if (n < 10) return ones[n];
+      if (n < 20) return teens[n-10];
+      if (n < 100) { const t=Math.floor(n/10), r=n%10; return r ? `${tens[t]}-${ones[r]}` : tens[t]; }
+      const h=Math.floor(n/100), rest=n%100;
+      return rest ? `${ones[h]} hundred and ${toWordsUnder1000(rest)}` : `${ones[h]} hundred`;
+    }
+
+    function fracHTML(n, d) { return `<span class="frac"><span class="top">${n}</span><span class="bottom">${d}</span></span>`; }
+
+    function uniqueGenerate(genFn, seen, maxTries = 25) {
+      for (let i=0;i<maxTries;i++){ const out=genFn(); const key=out.key||out.prompt; if(!seen.has(key)){ seen.add(key); return out; } }
+      const out=genFn(); seen.add(out.key||out.prompt); return out;
+    }
+
+    /* --- factor helpers (restricted to values < 45) --- */
+    const PRIMES = [2,3,5,7,11,13];
+
+    // semiprime p*q with p != q and p*q < 45
+    function randomSemiprimeUnder45() {
+      const candidates = [];
+      for (let i=0;i<PRIMES.length;i++){
+        for (let j=i+1;j<PRIMES.length;j++){
+          const n = PRIMES[i] * PRIMES[j];
+          if (n < 45) candidates.push(n);
+        }
+      }
+      // e.g., 6,10,14,15,21,22,26,33,35,39, etc. (all < 45)
+      return candidates[randInt(0, candidates.length-1)];
+    }
+
+    // prime cube p^3 with value < 45 => only 2^3=8, 3^3=27
+    function randomPrimeCubeUnder45() {
+      const cubes = [8, 27];
+      return cubes[randInt(0, cubes.length-1)];
+    }
+
+    // numbers with exactly 6 factors and < 45: n = p^2 * q, p != q
+    function randomSixFactorUnder45() {
+      const options = [12, 18, 20, 28, 44]; // proven p^2*q < 45 set
+      return options[randInt(0, options.length-1)];
+    }
+
+    function allFactors(n){
+      const out = [];
+      for (let i=1;i*i<=n;i++){
+        if (n%i===0){ out.push(i); if(i*i!==n) out.push(n/i); }
+      }
+      return out.sort((a,b)=>a-b);
+    }
+
+    /* ---------- Question Bank (Sets 1–7) ---------- */
+    const BANK = [
+      /* Set 1: Place Value & Number Composition */
+      {
+        setId: 1,
+        setTitle: "Set 1: Place Value & Number Composition",
+        items: [
+          { label: "1A", prompt: "What is the value of the digit 3 in the number 63 412?", answer: "3000" },
+          { label: "1B", prompt: "Write the number that is the same as 33 thousands and 4 tens.", answer: "33 040" },
+          { label: "1C", prompt: "Write the number that is the same as 52 thousands and 7 ones.", answer: "52 007" },
+          { label: "1D", prompt: "What is the value of the digit 8 in the number 48 192?", answer: "8000" }
+        ]
+      },
+
+      /* Set 2: Expanded Form & Word–Numerals (with comma + 'and' rule) */
+      {
+        setId: 2,
+        setTitle: "Set 2: Numbers in Expanded Form & Word–Numerals",
+        items: [
+          { label: "2A", generate: () => {
+              const a=randInt(1,9)*10000, b=randInt(1,9)*1000, c=randInt(1,9)*100, d=randInt(0,9);
+              return { key:`sum:${a}+${b}+${c}+${d}`, prompt:`Find the value of: ${fmt(a)} + ${fmt(b)} + ${fmt(c)} + ${fmt(d)}`, answer: fmt(a+b+c+d) };
+            } },
+          { label: "2B", generate: () => {
+              const n=randInt(10000,99999), tensDigit=Math.floor(n/10)%10;
+              return { key:`tens:${n}`, prompt:`In the number ${fmt(n)}, which digit is in the tens place?`, answer:String(tensDigit) };
+            } },
+          { label: "2C", generate: () => {
+              const thousands=randInt(10,99), rest=randInt(1,999);
+              const phrase=`${toWordsUnder1000(thousands)} thousand, ${toWordsUnder1000(rest)}`;
+              const value=thousands*1000+rest;
+              return { key:`words1:${thousands}-${rest}`, prompt:`Write ‘${phrase}’ in numerals.`, answer: fmt(value) };
+            } },
+          { label: "2D", generate: () => {
+              const thousands=Math.floor(randInt(2,9))*10, rest=randInt(1,999);
+              const phrase=`${toWordsUnder1000(thousands)} thousand, ${toWordsUnder1000(rest)}`;
+              const value=thousands*1000+rest;
+              return { key:`words2:${thousands}-${rest}`, prompt:`Write ‘${phrase}’ in numerals.`, answer: fmt(value) };
+            } },
+        ]},
+
+      /* Set 3: Rounding */
+      {
+        setId: 3,
+        setTitle: "Set 3: Rounding",
+        items: [
+          { label: "3A", generate: () => { const n=randInt(10000,99999); return {key:`r100:${n}`,   prompt:`Round ${fmt(n)} to the nearest hundred.`,     answer: fmt(Math.round(n/100)*100)}; } },
+          { label: "3B", generate: () => { const n=randInt(10000,99999); return {key:`r1000:${n}`,  prompt:`Round ${fmt(n)} to the nearest thousand.`,    answer: fmt(Math.round(n/1000)*1000)}; } },
+          { label: "3C", generate: () => { const n=randInt(10000,99999); return {key:`r10000:${n}`, prompt:`Round ${fmt(n)} to the nearest ten thousand.`, answer: fmt(Math.round(n/10000)*10000)}; } },
+          { label: "3D", generate: () => { const n=randInt(10000,99999); return {key:`r10:${n}`,    prompt:`What is ${fmt(n)} rounded to the nearest ten?`,answer: fmt(Math.round(n/10)*10)}; } },
+        ]
+      },
+
+      /* Set 4: Addition & Subtraction */
+      {
+        setId: 4,
+        setTitle: "Set 4: Addition & Subtraction",
+        items: [
+          { label: "4A", generate: () => { const a=randInt(2000,4999), b=randInt(500,1999); return {key:`add:${a}+${b}`,  prompt:`${fmt(a)} + ${fmt(b)} = _______`, answer: fmt(a+b)}; } },
+          { label: "4B", generate: () => { const a=randInt(2000,4999), b=randInt(2000,4999); return {key:`add2:${a}+${b}`, prompt:`${fmt(a)} + ${fmt(b)} = _______`, answer: fmt(a+b)}; } },
+          { label: "4C", generate: () => { const a=randInt(500,999),   b=randInt(500,999);   return {key:`sum:${a}+${b}`,  prompt:`Find the sum of ${fmt(a)} and ${fmt(b)}.`, answer: fmt(a+b)}; } },
+          { label: "4D", generate: () => { const n=randInt(9000,9999); return {key:`plus10:${n}`,   prompt:`What number is 10 more than ${fmt(n)}?`,       answer: fmt(n+10)}; } },
+          { label: "4E", generate: () => { const a=randInt(2000,4999), b=randInt(200,1800);  return {key:`sub:${a}-${b}`,  prompt:`${fmt(a)} – ${fmt(b)} = _______`, answer: fmt(a-b)}; } },
+          { label: "4F", generate: () => { let a=randInt(3000,5999), b=randInt(1000,2999); if(b>a)[a,b]=[b,a]; return {key:`sub2:${a}-${b}`, prompt:`${fmt(a)} – ${fmt(b)} = _______`, answer: fmt(a-b)}; } },
+          { label: "4G", generate: () => { const a=randInt(600,999), b=randInt(200,599);     return {key:`sub3:${a}-${b}`, prompt:`Subtract ${fmt(b)} from ${fmt(a)}.`, answer: fmt(a-b)}; } },
+        ]
+      },
+
+      /* Set 5: Factors (randomised; answers always two factors; numbers < 45) */
+      {
+        setId: 5,
+        setTitle: "Set 5: Factors",
+        items: [
+          // Exactly 4 factors => two missing when 1 and n are given
+          { label: "5A", generate: () => {
+              const useSemi = Math.random() < 0.65;
+              const n = useSemi ? randomSemiprimeUnder45() : randomPrimeCubeUnder45(); // < 45
+              const F = allFactors(n); // [1, a, b, n] or [1, p, p^2, p^3]
+              const missing = F.filter(x => x !== 1 && x !== n);
+              const ans = `${missing[0]} and ${missing[1]}`;
+              return {
+                key: `f4u45:${n}`,
+                prompt: `Two factors of ${n} are 1 and ${n}. What are the other two factors of ${n}?`,
+                answer: ans
+              };
+            }},
+
+          // Exactly 6 factors => four nontrivial; show two, hide two (n < 45)
+          { label: "5B", generate: () => {
+              const n = randomSixFactorUnder45(); // from {12,18,20,28,44}
+              const F = allFactors(n);
+              const mid = F.filter(x => x !== 1 && x !== n); // 4 nontrivial factors
+              const shuffled = mid.sort(() => Math.random() - 0.5);
+              const given = shuffled.slice(0,2).sort((a,b)=>a-b);
+              const missing = shuffled.slice(2,4).sort((a,b)=>a-b);
+              const prompt = `Some factors of ${n} are 1, ${given[0]}, ${given[1]} and ${n}. What are the other two factors of ${n}?`;
+              const answer = `${missing[0]} and ${missing[1]}`;
+              return { key: `f6u45:${n}|g:${given.join(",")}`, prompt, answer };
+            }},
+        ]
+      },
+
+      /* Set 6: Multiplication & Division */
+      {
+        setId: 6,
+        setTitle: "Set 6: Multiplication & Division",
+        items: [
+          { label: "6A", generate: () => { const a=randInt(1000,1999), b=randInt(3,8); return {key:`mul:${a}x${b}`, prompt:`${fmt(a)} × ${b} = _______`, answer: fmt(a*b)}; } },
+          { label: "6B", generate: () => { const a=randInt(900,1500),  b=randInt(6,12); return {key:`prod:${a}x${b}`, prompt:`Find the product of ${fmt(a)} and ${b}.`, answer: fmt(a*b)}; } },
+          { label: "6C", generate: () => { const q=randInt(500,999), d=randInt(6,9), n=q*d; return {key:`div:${n}/${d}`, prompt:`${fmt(n)} ÷ ${d} = _______`, answer: fmt(q)}; } },
+          { label: "6D", generate: () => { const d=randInt(6,9), q=randInt(100,300), r=randInt(1,d-1), n=q*d+r; return {key:`rem:${n}%${d}`, prompt:`What is the remainder when ${fmt(n)} is divided by ${d}?`, answer: String(r)}; } },
+        ]
+      },
+
+      /* Set 7: Decimals & Fractions (stacked fractions + new line lists) */
+      {
+        setId: 7,
+        setTitle: "Set 7: Decimals & Fractions",
+        items: [
+          { label: "7A", generate: () => { const x=randInt(1,9); return {key:`tenths:${x}`,      prompt:`Write ${x} tenths as a decimal.`,       answer:`0.${x}`}; } },
+          { label: "7B", generate: () => { const x=randInt(1,9); return {key:`hundredths:${x}`,  prompt:`Write ${x} hundredths as a decimal.`,    answer:`0.0${x}`}; } },
+          { label: "7C", generate: () => { const x=randInt(1,9); return {key:`thousandths:${x}`, prompt:`Write ${x} thousandths as a decimal.`,   answer:`0.00${x}`}; } },
+
+          /* Ordering — list on new line */
+          { label: "7D", generate: () => {
+              const a=Math.random()/1.1, b=Math.random()/1.1, c=Math.random()/1.1;
+              const nums=[a,b,c].map(v=>Number(v.toFixed(3)));
+              const prompt=`Arrange these numbers from the greatest to the smallest.<br><br>${nums.join(" , ")}`;
+              const ans=[...nums].sort((x,y)=>y-x).join(", ");
+              return { key:`ordGS:${nums.join("|")}`, prompt, answer: ans };
+            } },
+          { label: "7E", generate: () => {
+              const a=Number((Math.random()).toFixed(3));
+              const b=Number((Math.random()).toFixed(3));
+              const c=Number((randInt(1,9)+Math.random()).toFixed(1));
+              const d=Number((Math.random()).toFixed(3));
+              const nums=[a,b,c,d];
+              const prompt=`Arrange these numbers from the smallest to the greatest.<br><br>${nums.join(" , ")}`;
+              const ans=[...nums].sort((x,y)=>x-y).join(", ");
+              return { key:`ordSG:${nums.join("|")}`, prompt, answer: ans };
+            } },
+
+          /* Ordering with a stacked fraction */
+          { label: "7F", generate: () => {
+              const numerator = randInt(1,9);
+              const denominator = [2,4,5,8,10,20,25][randInt(0,6)];
+              const fracVal = numerator/denominator;
+              const d1 = Number((Math.random()/2).toFixed(3));
+              const d2 = Number((0.5 + Math.random()/2).toFixed(3));
+              const list = [fracHTML(numerator,denominator), d1, d2];
+              const values = [fracVal, d1, d2];
+              const orderIdx = values.map((v,i)=>[v,i]).sort((A,B)=>A[0]-B[0]).map(t=>t[1]);
+              const ans = orderIdx.map(i=>list[i]).join(", ");
+              return { key:`mixOrd:${numerator}/${denominator}-${d1}-${d2}`, prompt:`Arrange these numbers from the smallest to the greatest.<br><br>${list.join(" , ")}`, answer: ans };
+            } },
+
+          { label: "7G", generate: () => { const a=randInt(1,9); return { key:`decToFrac:${a}`, prompt:`Express 0.${a} as a fraction.`, answer:`${fracHTML(a,10)} or equivalent` }; } },
+          { label: "7H", generate: () => { const p=randInt(1,99); return { key:`frac100:${p}`, prompt:`Express ${fracHTML(p,100)} as a decimal.`, answer:`0.${String(p).padStart(2,"0")}` }; } },
+
+          { label: "7I", generate: () => { const n=(randInt(10,99)+Math.random()).toFixed(2); return { key:`round:${n}`, prompt:`Round ${n} to the nearest whole number.`, answer:String(Math.round(Number(n))) }; } },
+          { label: "7J", generate: () => { const a=(randInt(100,999)/100).toFixed(2), b=randInt(1,9); return { key:`addInt:${a}+${b}`, prompt:`${a} + ${b} = _______`, answer:(Number(a)+b).toFixed(2) }; } },
+          { label: "7K", generate: () => { const a=(randInt(1000,1999)/100).toFixed(2), b=(randInt(1,99)/100).toFixed(2); return { key:`addDec:${a}+${b}`, prompt:`${a} + ${b} = _______`, answer:(Number(a)+Number(b)).toFixed(2) }; } },
+          { label: "7L", generate: () => { let a=(randInt(500,999)/100).toFixed(2), b=(randInt(200,499)/100).toFixed(2); if(Number(b)>Number(a)) [a,b]=[b,a]; return { key:`subDec:${a}-${b}`, prompt:`${a} – ${b} = _______`, answer:(Number(a)-Number(b)).toFixed(2) }; } },
+          { label: "7M", generate: () => { const a=(randInt(70,120)/10).toFixed(1), b=(randInt(10,95)/100).toFixed(2); return { key:`subMix:${a}-${b}`, prompt:`${a} – ${b} = _______`, answer:(Number(a)-Number(b)).toFixed(2) }; } },
+          { label: "7N", generate: () => { const a=(randInt(300,999)/100).toFixed(2), m=randInt(2,9); return { key:`mulDec:${a}x${m}`, prompt:`Find the value of ${a} × ${m}.`, answer:(Number(a)*m).toFixed(2) }; } },
+        ]
+      }
+    ];
+
+    /* ---------- State ---------- */
+    let state = {
+      include: {1:true,2:true,3:true,4:true,5:true,6:true,7:true},
+      counts:  {1:2,   2:2,   3:2,   4:2,   5:2,   6:2,   7:2},
+      showAnswers:false,
+      flatQuestions:[]
+    };
+
+    /* ---------- Generation & UI ---------- */
+    function pickItems(items, k){ if (k<=0) return []; const shuffled=[...items].sort(()=>Math.random()-0.5); return shuffled.slice(0, Math.min(k, items.length)); }
+
+    function generateWorksheet(){
+      const seen = new Set();
+      state.flatQuestions = [];
+      BANK.forEach(set => {
+        if (!state.include[set.setId]) return;
+        const count = Math.min(state.counts[set.setId] || 0, set.items.length);
+        const chosen = pickItems(set.items, count);
+        chosen.forEach(item => {
+          if (typeof item.generate === "function") {
+            const out = uniqueGenerate(item.generate, seen);
+            state.flatQuestions.push({ label: item.label, prompt: out.prompt, answer: out.answer });
+          } else {
+            const key=item.prompt; if(!seen.has(key)){ seen.add(key); state.flatQuestions.push(item); }
+          }
+        });
+      });
+      renderWorksheet();
+    }
+
+    function renderWorksheet(){
+      const container=document.getElementById('questions-container');
+      const total=state.flatQuestions.length;
+      document.getElementById('preview-title').textContent=`Worksheet Preview (${total} question${total===1?'':'s'})`;
+
+      if (total===0) {
+        container.innerHTML='<div class="no-questions">No questions selected. Turn on one or more sets and choose counts above, then click Generate.</div>';
+      } else {
+        container.innerHTML=state.flatQuestions.map((q,idx)=>`
+          <div class="question-box">
+            <div class="question-text">${idx+1}. ${q.prompt}</div>
+            <div class="working-space"></div>
+            <div class="answer-line">Ans: _________________</div>
+          </div>
+          ${state.showAnswers?`<div class="answer-key inverted"><strong>Answer:</strong> ${q.answer}</div>`:''}
+        `).join('');
+      }
+      updatePlainText();
+    }
+
+    function toggleAnswers(){
+      state.showAnswers=!state.showAnswers;
+      document.getElementById('answer-btn-text').textContent=state.showAnswers?'Hide Answers':'Show Answers';
+      document.getElementById('eye-icon').textContent=state.showAnswers?'🙈':'👁️';
+      renderWorksheet();
+    }
+
+    function updatePlainText(){
+      const lines = ["P4 Whole Numbers – Worksheet","Name: __________   Class: __________   Date: __________\n"];
+      state.flatQuestions.forEach((q,i)=>{ 
+        const plainPrompt = q.prompt.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+        const plainAnswer = String(q.answer).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+        lines.push(`${i+1}. ${plainPrompt}`);
+        if(state.showAnswers){ lines.push(`   Answer: ${plainAnswer}`); }
+      });
+      document.getElementById('plain-text').value = lines.join("\n");
+    }
+
+    async function copyWorksheet(){
+      const text=document.getElementById('plain-text').value;
+      try{ await navigator.clipboard.writeText(text); alert('Worksheet copied to clipboard!'); }
+      catch{ alert('Copy failed. You can still select and copy manually.'); }
+    }
+
+    function renderControls(){
+      const grid=document.getElementById('sets-grid');
+      grid.innerHTML=BANK.map(set=>`
+        <div class="set-card">
+          <div class="set-header">
+            <div class="set-title">${set.setTitle}</div>
+            <div class="switch-container">
+              <label style="margin:0;">Include</label>
+              <div class="switch ${state.include[set.setId]?'active':''}" onclick="toggleSet(${set.setId})"><div class="switch-knob"></div></div>
+            </div>
+          </div>
+          <div>
+            <label for="count-${set.setId}">How many questions from this set?</label>
+            <input type="number" id="count-${set.setId}" min="0" max="${set.items.length}" value="${state.counts[set.setId]||0}" onchange="updateCount(${set.setId}, this.value)">
+            <div class="help-text">Max for this set: ${set.items.length}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    function toggleSet(setId){ state.include[setId]=!state.include[setId]; renderControls(); }
+    function updateCount(setId,value){ const max=BANK.find(s=>s.setId===setId).items.length; state.counts[setId]=Math.max(0, Math.min(Number(value), max)); }
+
+    renderControls(); generateWorksheet();
+  </script>
+</body>
+</html>
